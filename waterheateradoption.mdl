@@ -1,0 +1,376 @@
+{UTF-8}
+Advancement of Technology= INTEG (Technology Investment*1e-05,
+		0)
+	~	
+	~	Giving this a very small slow linear rise per euro invested.
+	|
+
+"Capital Expense (Cost of Install)"=(Cost Curve Advancement * Initial Installed Cost)\
+		 - Installation Subsidy
+	~	
+	~		|
+
+Cost Curve Advancement = WITH LOOKUP (Units Sold + (0.01 * Advancement of Technology)\
+		,
+		([(0,0)-(1e+07,1)],(28901.7,1), (2.02312e+06,0.481375), (3.98844e+06,0.286533), (6.04046e+06\
+		,0.209169), (8.06358e+06,0.169054), (9.9422e+06,0.143266)))
+	~	
+	~	Cost of delivering a DR hot water heater will decline as more units are \
+		manufactured and sold. Not considered here are the fact that this is based \
+		on worldwide sales and sales within the country only make up a portion of \
+		that. Adding a small factor for technology advancement as well.
+	|
+
+Customer Demand=1 - ("Capital Expense (Cost of Install)" + (Operating Cost * 5 ) ) / \
+		Homeowner Level of Disposable Income - Impact to Customer Life
+	~	 [0,1]
+	~	This variable is the probability (0.0-1.0) of customers who choose to install a DR \
+		Hot Water heater.
+		
+		The cost of the system as understood by the customer, as compared to a comparable \
+		conventional solution, as well as the impact to their lives (maybe their \
+		water would be less hot sometimes) are subtracted from their willingness \
+		to buy.
+		
+		This is probably a very/the most important part of the model, so it will be \
+		interesting to continue to explore this area and learn how others have \
+		modeled demand like this. 
+		
+		TODO: look at how it's done in Squaring the Sunny Circle.
+	|
+
+DR Hot Water Impact Per Installed Unit=1
+	~	
+	~	What might the units on this be? Probably in Euros?
+		
+		Would be interesting to consider how to model the payments going back to homeowners. \
+		This is the net benefit to the grid.
+		
+		Cost and Reliability should be disaggregated as well.
+	|
+
+DRHW Installations=Homes Needing New Hot Water * Customer Demand
+	~	
+	~		|
+
+DRHW Retirements=Installed DR Hot Water Units*"Performance/ Quality Issue Rate"
+	~	
+	~		|
+
+"Exogenous Grid Cost & Reliability Factors"=0.8 + COSWAVE ( 0.05, 2 )
+	~	
+	~	Some variability here to represent exogenous variables in grid stability - \
+		investments in infrastructure, natural gas price volatility, intermittent \
+		sources, etc
+	|
+
+"Grid Cost & Reliability"="Exogenous Grid Cost & Reliability Factors"+"Impact of DR Hot Water on Grid Cost & Reliability"
+	~	
+	~		|
+
+Home Renovations=Homes without Hot Water Heater*( 1-Renovate or Abandon Rate)
+	~	
+	~		|
+
+Homeowner Level of Disposable Income = WITH LOOKUP (National Economy,
+		([(0,0)-(1e+09,20000)],(0,171.92), (1.85629e+08,1260.74), (3.74251e+08,3381.09), (5.7485e+08\
+		,6418.34), (7.57485e+08,11174.8), (9.43114e+08,15644.7), (9.94012e+08,20000)))
+	~	
+	~		|
+
+Homes Abandoned=Homes without Hot Water Heater*Renovate or Abandon Rate
+	~	
+	~		|
+
+Homes Needing New Hot Water= INTEG (Home Renovations+New Home Construction-DRHW Installations\
+		,
+		500)
+	~	
+	~	A home might also have a conventional or non-DR hot water heater. That's \
+		not really well represented here at the moment.
+	|
+
+Homes without Hot Water Heater= INTEG (DRHW Retirements-Home Renovations-Homes Abandoned\
+		,
+		0)
+	~	
+	~		|
+
+"Impact of DR Hot Water on Grid Cost & Reliability" = WITH LOOKUP (DR Hot Water Impact Per Installed Unit\
+		 * Installed DR Hot Water Units,
+		([(0,0)-(1000,0.2)],(0,0.000573), (121.387,0.026934), (291.908,0.051576), (465.318,\
+		0.084814), (696.532,0.131232), (817.919,0.162178), (997.11,0.2)))
+	~	
+	~	Lookup based on incoming value to see how much to increase the grid cost/reliability \
+		value.
+		
+		TODO: definitely need to sort out what the units here are.
+	|
+
+Impact to Customer Life = WITH LOOKUP (Advancement of Technology,
+		([(0,0)-(1,10)],(0.00289,10), (0.193642,6.61891), (0.404624,4.38395), (0.598266,3.89685\
+		), (0.809249,3.26648), (0.991329,3.26648)))
+	~	
+	~		|
+
+Initial Installed Cost=5000
+	~	
+	~	Euros to install and commission including equipment and labor
+	|
+
+Installation Subsidy=Public Investment in DR Hot Water*"Policy - Invest in Subsidy vs R&D"
+	~	
+	~		|
+
+Installed DR Hot Water Units= INTEG (DRHW Installations-DRHW Retirements,
+		0)
+	~	
+	~		|
+
+National Economy = WITH LOOKUP ("Grid Cost & Reliability",
+		([(0,9e+08)-(1,1e+09)],(0.003012,9.00573e+08), (0.180723,9.19484e+08), (0.400602,9.40688e+08\
+		), (0.777108,9.76791e+08), (0.990964,1e+09)))
+	~	
+	~		|
+
+New Home Construction = WITH LOOKUP (National Economy,
+		([(-0,0)-(1,100)],(0.00289,0.286533), (0.083815,27.7937), (0.17052,39.8281), (0.257225\
+		,49.8567), (0.401734,61.6046), (0.546243,64.7564), (0.696532,67.9083), (0.83526,69.914\
+		), (0.99711,69.6275)))
+	~	
+	~	Assume that national economy strength (0.0-1.0) will result in some \
+		increase in new homes built per time period
+	|
+
+Operating Cost = WITH LOOKUP (Advancement of Technology,
+		([(0,0)-(1,600)],(0,598.281), (0.199422,493.41), (0.393064,407.45), (0.595376,361.032\
+		), (0.806358,340.401), (0.99711,333.524)))
+	~	
+	~	Operating costs go down over time as technology improves. In euros per \
+		year.
+	|
+
+"Performance/ Quality Issue Rate"=0.001
+	~	
+	~		|
+
+"Policy - Invest in Subsidy vs R&D"=0.8
+	~	
+	~	value goes to installation and 1-value goes to R&D proportionally
+	|
+
+Public Investment in DR Hot Water=National Economy * (0.01 * "Public Perception that DR Hot Water is Valuable Solution for Grid Cost/Reliability"\
+		 * "Public Prioritization of Grid Cost & Reliability as an Issue" * Public Support for Electrification\
+		 )
+	~	
+	~	Only some small percent of the national economy (I guess GDP) could be \
+		collected through taxes (maybe make this explicit) and then only a small \
+		percent of that would be allocated to investments in this solution, based \
+		on public perception of the magnitude of the issue and the fitness of this \
+		solution to it.
+	|
+
+"Public Perception that DR Hot Water is Valuable Solution for Grid Cost/Reliability"=\
+		"Impact of DR Hot Water on Grid Cost & Reliability" * Publicity of DR Hot Water Value
+	~	
+	~		|
+
+"Public Prioritization of Grid Cost & Reliability as an Issue"="Grid Cost & Reliability"
+	~	
+	~		|
+
+Public Support for Electrification=0.5
+	~	
+	~		|
+
+Publicity of DR Hot Water Value=0.2
+	~	
+	~	How aware are people of the impact that DR HW is having on grid \
+		cost/reliability?
+	|
+
+"R&D Subsidy"=Public Investment in DR Hot Water*"Policy - Invest in Subsidy vs R&D"
+	~	
+	~		|
+
+Renovate or Abandon Rate=0.005
+	~	
+	~	What is the probablility that a home is renovated or abandoned when its \
+		hot water heater is broken
+	|
+
+Revenue from DR Hot Water Units=1000*DRHW Installations
+	~	
+	~	Assume 1000 euro revenue from each unit sold - probably should be own \
+		variable. Also, profit might be the more relevant variable here.
+	|
+
+Technology Investment="R&D Subsidy" + (Revenue from DR Hot Water Units * 0.1)
+	~	
+	~	Assume a 10% revenue reinvestment rate - maybe should pull this out into \
+		its own variable
+	|
+
+Units Sold= INTEG (DRHW Installations,
+		0)
+	~	
+	~		|
+
+********************************************************
+	.Control
+********************************************************~
+		Simulation Control Parameters
+	|
+
+FINAL TIME  = 100
+	~	Hour
+	~	The final time for the simulation.
+	|
+
+INITIAL TIME  = 0
+	~	Hour
+	~	The initial time for the simulation.
+	|
+
+SAVEPER  = 
+        TIME STEP
+	~	Hour [0,?]
+	~	The frequency with which output is stored.
+	|
+
+TIME STEP  = 1
+	~	Hour [0,?]
+	~	The time step for the simulation.
+	|
+
+\\\---/// Sketch information - do not modify anything except names
+V300  Do not put anything below this section - it will be ignored
+*View 1
+$-1--1--1,0,|12||-1--1--1|-1--1--1|-1--1--1|-1--1--1|-1--1--1|96,96,56,2
+10,1,Installed DR Hot Water Units,1685,335,60,26,3,3,0,0,-1,1,0,0,0,0,0,0,0,0
+10,2,Customer Demand,1514,483,46,26,8,3,0,0,-1,1,0,0,0,0,0,0,0,0
+10,3,Operating Cost,1677,525,57,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,4,Impact to Customer Life,1582,611,53,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,5,"Capital Expense (Cost of Install)",1379,578,60,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,6,Cost Curve Advancement,1750,774,52,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,7,Units Sold,2053,549,62,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,8,Installation Subsidy,1303,697,62,26,8,3,0,0,-1,1,0,0,0,0,0,0,0,0
+1,9,8,5,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,10,5,2,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,11,3,2,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,12,4,2,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,13,6,5,1,0,0,0,0,192,0,-1--1--1,,1|(1541,727)|
+1,14,7,6,1,0,0,0,0,192,0,-1--1--1,,1|(1942,691)|
+10,15,Public Support for Electrification,1878,1094,64,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,16,National Economy,1148,885,46,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,17,"Public Perception that DR Hot Water is Valuable Solution for Grid Cost/Reliability",1535,1099,92,46,8,3,0,0,-1,1,0,0,0,0,0,0,0,0
+1,18,2,56,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,19,Homeowner Level of Disposable Income,1220,493,74,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,20,16,19,1,0,0,0,0,192,0,-1--1--1,,1|(1139,687)|
+10,21,Technology Investment,1887,561,46,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,22,Revenue from DR Hot Water Units,1773,464,65,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,23,22,21,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,24,Advancement of Technology,1772,632,61,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,25,21,24,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,26,24,4,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,27,24,6,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,28,24,3,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,29,31,1,100,0,0,22,0,192,0,-1--1--1,,1|(1789,335)|
+1,30,31,51,4,0,0,22,0,192,0,-1--1--1,,1|(1839,213)|
+11,31,0,1839,335,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,32,DRHW Retirements,1839,369,61,26,40,3,0,0,-1,1,0,0,0,0,0,0,0,0
+10,33,"R&D Subsidy",2108,700,49,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,34,Public Investment in DR Hot Water,1645,971,75,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,35,17,34,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,36,15,34,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,37,34,8,1,0,0,0,0,192,0,-1--1--1,,1|(1447,865)|
+1,38,34,33,1,0,0,0,0,192,0,-1--1--1,,1|(1880,882)|
+1,39,19,2,1,0,0,0,0,192,0,-1--1--1,,1|(1378,467)|
+1,40,16,34,1,0,0,0,0,192,0,-1--1--1,,1|(1379,958)|
+10,41,"Impact of DR Hot Water on Grid Cost & Reliability",1289,96,77,36,8,3,0,0,-1,1,0,0,0,0,0,0,0,0
+1,42,1,41,1,0,0,0,0,192,0,-1--1--1,,1|(1546,142)|
+10,43,"Grid Cost & Reliability",900,234,46,26,8,3,0,0,-1,1,0,0,0,0,0,0,0,0
+1,44,41,43,1,0,0,0,0,192,0,-1--1--1,,1|(1084,151)|
+1,45,43,16,1,0,0,0,0,192,0,-1--1--1,,1|(838,612)|
+1,46,33,21,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,47,"Public Prioritization of Grid Cost & Reliability as an Issue",1128,1031,89,36,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,48,43,47,1,0,0,0,0,192,0,-1--1--1,,1|(705,668)|
+1,49,47,34,1,0,0,0,0,192,0,-1--1--1,,1|(1396,1042)|
+1,50,41,17,1,0,0,0,0,192,0,-1--1--1,,1|(518,666)|
+10,51,Homes without Hot Water Heater,2030,213,77,39,3,3,0,0,-1,1,0,0,0,0,0,0,0,0
+10,52,Homes Needing New Hot Water,1344,222,69,42,3,3,0,0,-1,1,0,0,0,0,0,0,0,0
+1,53,55,52,100,0,0,22,0,192,0,-1--1--1,,1|(1514,222)|
+1,54,55,1,4,0,0,22,0,192,0,-1--1--1,,1|(1572,335)|
+11,55,0,1514,335,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,56,DRHW Installations,1514,369,61,26,40,3,0,0,-1,1,0,0,0,0,0,0,0,0
+1,57,56,22,1,0,0,0,0,192,0,-1--1--1,,1|(1631,431)|
+1,58,56,7,1,0,0,0,0,192,0,-1--1--1,,1|(1819,425)|
+12,59,48,2254,270,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,60,62,51,100,0,0,22,0,192,0,-1--1--1,,1|(2155,213)|
+1,61,62,59,4,0,0,22,0,192,0,-1--1--1,,1|(2202,270)|
+11,62,0,2155,270,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,63,Homes Abandoned,2155,304,46,26,40,3,0,0,-1,1,0,0,0,0,0,0,0,0
+1,64,66,51,100,0,0,22,0,192,0,-1--1--1,,1|(1830,192)|
+1,65,66,52,4,0,0,22,0,192,0,-1--1--1,,1|(1554,192)|
+11,66,0,1701,192,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,67,Home Renovations,1701,226,57,26,40,3,0,0,-1,1,0,0,0,0,0,0,0,0
+12,68,48,1038,290,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,69,71,68,100,0,0,22,0,192,0,-1--1--1,,1|(1091,290)|
+1,70,71,52,4,0,0,22,0,192,0,-1--1--1,,1|(1142,222)|
+11,71,0,1142,290,8,6,33,3,0,0,4,0,0,0,0,0,0,0,0,0
+10,72,New Home Construction,1199,290,49,26,40,3,0,0,-1,1,0,0,0,0,0,0,0,0
+1,73,16,72,1,0,0,0,0,192,0,-1--1--1,,1|(964,569)|
+1,74,52,56,1,0,0,0,0,192,0,-1--1--1,,1|(1419,337)|
+1,75,1,32,1,0,0,0,0,192,0,-1--1--1,,1|(1775,389)|
+10,76,"Performance/ Quality Issue Rate",2022,414,78,26,8,3,0,0,-1,1,0,0,0,0,0,0,0,0
+1,77,76,32,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,78,Renovate or Abandon Rate,2100,103,54,26,8,3,0,0,-1,1,0,0,0,0,0,0,0,0
+1,79,78,67,1,0,0,0,0,192,0,-1--1--1,,1|(1841,81)|
+1,80,78,63,1,0,0,0,0,192,0,-1--1--1,,1|(2186,198)|
+1,81,51,63,1,0,0,0,0,192,0,-1--1--1,,1|(2082,288)|
+1,82,51,67,1,0,0,0,0,192,0,-1--1--1,,1|(1856,140)|
+10,83,DR Hot Water Impact Per Installed Unit,1520,2,76,26,8,3,0,0,-1,1,0,0,0,0,0,0,0,0
+1,84,83,41,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,85,"Exogenous Grid Cost & Reliability Factors",950,140,75,26,8,3,0,0,-1,1,0,0,0,0,0,0,0,0
+1,86,85,43,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,87,Publicity of DR Hot Water Value,1765,1212,60,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,88,87,17,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,89,"Policy - Invest in Subsidy vs R&D",1644,877,60,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,90,89,8,1,0,0,0,0,192,0,-1--1--1,,1|(1470,816)|
+1,91,89,33,1,0,0,0,0,192,0,-1--1--1,,1|(1892,815)|
+10,92,Initial Installed Cost,1586,687,56,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,93,92,5,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+///---\\\
+:L<%^E!@
+1:current.vdfx
+4:Time
+5:Public Investment in DR Hot Water
+9:current
+19:56,0
+24:0
+25:100
+26:100
+23:0
+15:0,0,0,0,0,0
+27:0,
+34:0,
+42:0
+72:0
+73:0
+95:0
+96:0
+97:0
+77:0
+78:0
+102:1
+93:0
+94:0
+92:0
+91:0
+90:0
+87:0
+75:
+43:
+103:8,8,8,3,8
+105:0,0,0,0,0,0,0,0,0,0
+104:Vensim Sans|12||0-0-0|0-0-0|-1--1--1|0-0-255|192-192-192|-1--1--1
